@@ -101,11 +101,32 @@ export interface NestConfiguration {
   exploreConcave: boolean;
 }
 
+/**
+ * Custom NFP (No-Fit Polygon) function type.
+ * Allows external implementations (e.g., WASM-accelerated) to provide NFP computation.
+ *
+ * @param a - The static polygon (bin or placed shape)
+ * @param b - The movable polygon to be placed
+ * @param inside - If true, compute inner NFP (B orbits inside A); if false, outer NFP
+ * @returns Array of NFP polygons, or null if computation fails
+ */
+export type CustomNfpFunction = (
+  a: ArrayPolygon,
+  b: ArrayPolygon,
+  inside: boolean
+) => Array<Array<Point>> | null;
+
 export interface PairWorkerData {
   rotations: number;
   binPolygon: ArrayPolygon;
   searchEdges: boolean;
   useHoles: boolean;
+  /**
+   * Optional custom NFP computation function.
+   * When provided, this function is called instead of the built-in NFP algorithms.
+   * Use this to inject WASM-accelerated or otherwise optimized NFP computation.
+   */
+  customNfpFn?: CustomNfpFunction;
 }
 
 export interface NfpPair {

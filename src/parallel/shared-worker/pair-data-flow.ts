@@ -1064,6 +1064,7 @@ export function pairData(
 
   const searchEdges = env.searchEdges;
   const useHoles = env.useHoles;
+  const customNfpFn = env.customNfpFn;
 
   const nfpData = keyToNFPData(pair.key, env.rotations);
 
@@ -1073,10 +1074,17 @@ export function pairData(
   let i = 0;
 
   if (nfpData["inside"]) {
-    if (isRectangle(a)) {
-      nfp = noFitPolygonRectangle(a, b);
-    } else {
-      nfp = noFitPolygon(a, b, true, searchEdges);
+    // Try custom NFP function first if provided
+    if (customNfpFn) {
+      nfp = customNfpFn(a, b, true);
+    }
+    // Fall back to built-in implementations
+    if (!nfp) {
+      if (isRectangle(a)) {
+        nfp = noFitPolygonRectangle(a, b);
+      } else {
+        nfp = noFitPolygon(a, b, true, searchEdges);
+      }
     }
     // ensure all interior NFPs have the same winding direction
     if (nfp && nfp.length > 0) {
@@ -1092,10 +1100,17 @@ export function pairData(
       return null;
     }
   } else {
-    if (searchEdges) {
-      nfp = noFitPolygon(a, b, false, searchEdges);
-    } else {
-      nfp = minkowskiDifference(a, b);
+    // Try custom NFP function first if provided
+    if (customNfpFn) {
+      nfp = customNfpFn(a, b, false);
+    }
+    // Fall back to built-in implementations
+    if (!nfp) {
+      if (searchEdges) {
+        nfp = noFitPolygon(a, b, false, searchEdges);
+      } else {
+        nfp = minkowskiDifference(a, b);
+      }
     }
     // sanity check
     if (!nfp || nfp.length == 0) {
