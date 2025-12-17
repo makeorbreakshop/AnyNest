@@ -87,6 +87,12 @@ export interface NestConfigExternal {
   mutationRate?: number;
   useHoles?: boolean;
   exploreConcave?: boolean;
+  /**
+   * Optional custom NFP computation function.
+   * When provided, this function is called instead of the built-in NFP algorithms.
+   * Use this to inject WASM-accelerated or otherwise optimized NFP computation.
+   */
+  customNfpFn?: CustomNfpFunction;
 }
 
 export interface NestConfiguration {

@@ -15,7 +15,8 @@ import {
   Placement,
   NestConfiguration,
   NestConfigExternal,
-  Point
+  Point,
+  CustomNfpFunction
 } from "./interfaces";
 import Phenotype from "./genetic-algorithm/phenotype";
 import {pairData} from "./parallel/shared-worker/pair-data-flow";
@@ -34,6 +35,7 @@ class AnyNest {
   private _binPolygon: FloatPolygon = null;
   private _nfpCache: Map<string, ArrayPolygon[]>;
   private _workerTimer: NodeJS.Timeout = null;
+  private _customNfpFn: CustomNfpFunction | null = null;
 
   constructor() {
     // keep a reference to any style nodes, to maintain color/fill info
@@ -105,6 +107,11 @@ class AnyNest {
       if (configuration[property]) {
         this._configuration[property] = configuration[property];
       }
+    }
+
+    // Store custom NFP function separately (not part of NestConfiguration)
+    if (configuration.customNfpFn) {
+      this._customNfpFn = configuration.customNfpFn;
     }
 
     this._best = null;
@@ -183,7 +190,8 @@ class AnyNest {
         rotations: this._configuration.rotations,
         binPolygon: this._binPolygon, // TODO: this is unused.
         searchEdges: this._configuration.exploreConcave,
-        useHoles: this._configuration.useHoles
+        useHoles: this._configuration.useHoles,
+        customNfpFn: this._customNfpFn || undefined
       }
       ));
       this._progress = results.length / nfpPairs.length;

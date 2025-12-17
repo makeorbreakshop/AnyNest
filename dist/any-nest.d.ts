@@ -16,6 +16,7 @@ declare class AnyNest {
     private _binPolygon;
     private _nfpCache;
     private _workerTimer;
+    private _customNfpFn;
     constructor();
     /**
      * Provide the bin shape into which all parts will attempt to be nested.

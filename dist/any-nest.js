@@ -53,6 +53,7 @@ var AnyNest = /** @class */ (function () {
         this._tree = null;
         this._binPolygon = null;
         this._workerTimer = null;
+        this._customNfpFn = null;
         // keep a reference to any style nodes, to maintain color/fill info
         this._nfpCache = new Map();
         this._configuration = {
@@ -117,6 +118,10 @@ var AnyNest = /** @class */ (function () {
             if (configuration[property]) {
                 this._configuration[property] = configuration[property];
             }
+        }
+        // Store custom NFP function separately (not part of NestConfiguration)
+        if (configuration.customNfpFn) {
+            this._customNfpFn = configuration.customNfpFn;
         }
         this._best = null;
         this._nfpCache.clear();
@@ -185,7 +190,8 @@ var AnyNest = /** @class */ (function () {
                         rotations: this._configuration.rotations,
                         binPolygon: this._binPolygon, // TODO: this is unused.
                         searchEdges: this._configuration.exploreConcave,
-                        useHoles: this._configuration.useHoles
+                        useHoles: this._configuration.useHoles,
+                        customNfpFn: this._customNfpFn || undefined
                     }));
                     this._progress = results.length / nfpPairs.length;
                 }
