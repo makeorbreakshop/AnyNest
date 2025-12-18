@@ -1,6 +1,6 @@
 //@ts-ignore
 import ClipperLib from "js-clipper";
-import { getPolygonBounds, toClipperCoordinates, toNestCoordinates } from "../../geometry-util";
+import { polygonArea, getPolygonBounds, toClipperCoordinates, toNestCoordinates } from "../../geometry-util";
 import { generateNFPCacheKey } from "../../util";
 import FloatPoint from "../../geometry-util/float-point";
 import { almostEqual } from "../../util";
@@ -117,6 +117,13 @@ export default function placePaths(inputPaths, env) {
                     continue;
                 }
                 nfp = env.nfpCache.get(key);
+                // DEBUG: Log NFP structure from cache
+                if (nfp.length > 1) {
+                    var nfpAreas = nfp.map(function (p, idx) {
+                        return "".concat(idx, ": ").concat(polygonArea(p.points).toFixed(0));
+                    });
+                    console.log("[PLACE] NFP from cache has ".concat(nfp.length, " polygons (1 outer + ").concat(nfp.length - 1, " holes), areas: [").concat(nfpAreas.join(', '), "]"));
+                }
                 for (k = 0; k < nfp.length; ++k) {
                     clone = toClipperCoordinates(nfp.at(k).points);
                     for (m = 0; m < clone.length; ++m) {
@@ -134,6 +141,14 @@ export default function placePaths(inputPaths, env) {
             if (!clipper.Execute(ClipperLib.ClipType.ctUnion, combinedNfp, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero)) {
                 continue;
             }
+            // DEBUG: Log combinedNfp after union
+            if (combinedNfp.length > 0) {
+                var combinedAreas = combinedNfp.map(function (p, idx) {
+                    var a = ClipperLib.Clipper.Area(p);
+                    return "".concat(idx, ": ").concat((a / (env.config.clipperScale * env.config.clipperScale)).toFixed(0));
+                });
+                console.log("[PLACE] After union: ".concat(combinedNfp.length, " polygons, areas: [").concat(combinedAreas.join(', '), "]"));
+            }
             // difference with bin polygon
             finalNfp = new ClipperLib.Paths();
             clipper = new ClipperLib.Clipper();
@@ -143,6 +158,14 @@ export default function placePaths(inputPaths, env) {
                 continue;
             }
             finalNfp = ClipperLib.Clipper.CleanPolygons(finalNfp, cleanTrashold);
+            // DEBUG: Log finalNfp after difference (this is where shapes can be placed)
+            if (finalNfp.length > 0) {
+                var finalAreas = finalNfp.map(function (p, idx) {
+                    var a = ClipperLib.Clipper.Area(p);
+                    return "".concat(idx, ": ").concat((a / (env.config.clipperScale * env.config.clipperScale)).toFixed(0));
+                });
+                console.log("[PLACE] After difference (valid regions): ".concat(finalNfp.length, " polygons, areas: [").concat(finalAreas.join(', '), "]"));
+            }
             for (j = 0; j < finalNfp.length; ++j) {
                 area = Math.abs(ClipperLib.Clipper.Area(finalNfp.at(j)));
                 // TODO: this < 3 check disallows perfect fits.
@@ -154,6 +177,8 @@ export default function placePaths(inputPaths, env) {
             if (!finalNfp || finalNfp.length == 0) {
                 continue;
             }
+            // DEBUG: Log how many valid regions after filtering
+            console.log("[PLACE] After filtering: ".concat(finalNfp.length, " valid placement regions"));
             f = [];
             for (j = 0; j < finalNfp.length; ++j) {
                 // back to normal scale

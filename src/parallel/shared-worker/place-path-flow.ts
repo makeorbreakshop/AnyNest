@@ -159,6 +159,14 @@ export default function placePaths(
 
         nfp = env.nfpCache.get(key);
 
+        // DEBUG: Log NFP structure from cache
+        if (nfp.length > 1) {
+          const nfpAreas = nfp.map((p: ArrayPolygon, idx: number) =>
+            `${idx}: ${polygonArea(p.points).toFixed(0)}`
+          );
+          console.log(`[PLACE] NFP from cache has ${nfp.length} polygons (1 outer + ${nfp.length - 1} holes), areas: [${nfpAreas.join(', ')}]`);
+        }
+
         for (k = 0; k < nfp.length; ++k) {
           clone = toClipperCoordinates(nfp.at(k).points);
           for (m = 0; m < clone.length; ++m) {
@@ -187,6 +195,15 @@ export default function placePaths(
         continue;
       }
 
+      // DEBUG: Log combinedNfp after union
+      if (combinedNfp.length > 0) {
+        const combinedAreas = combinedNfp.map((p: ClipperPoint[], idx: number) => {
+          const a = ClipperLib.Clipper.Area(p);
+          return `${idx}: ${(a / (env.config.clipperScale * env.config.clipperScale)).toFixed(0)}`;
+        });
+        console.log(`[PLACE] After union: ${combinedNfp.length} polygons, areas: [${combinedAreas.join(', ')}]`);
+      }
+
       // difference with bin polygon
       finalNfp = new ClipperLib.Paths();
       clipper = new ClipperLib.Clipper();
@@ -206,6 +223,15 @@ export default function placePaths(
 
       finalNfp = ClipperLib.Clipper.CleanPolygons(finalNfp, cleanTrashold);
 
+      // DEBUG: Log finalNfp after difference (this is where shapes can be placed)
+      if (finalNfp.length > 0) {
+        const finalAreas = finalNfp.map((p: ClipperPoint[], idx: number) => {
+          const a = ClipperLib.Clipper.Area(p);
+          return `${idx}: ${(a / (env.config.clipperScale * env.config.clipperScale)).toFixed(0)}`;
+        });
+        console.log(`[PLACE] After difference (valid regions): ${finalNfp.length} polygons, areas: [${finalAreas.join(', ')}]`);
+      }
+
       for (j = 0; j < finalNfp.length; ++j) {
         area = Math.abs(ClipperLib.Clipper.Area(finalNfp.at(j)));
 
@@ -219,6 +245,9 @@ export default function placePaths(
       if (!finalNfp || finalNfp.length == 0) {
         continue;
       }
+
+      // DEBUG: Log how many valid regions after filtering
+      console.log(`[PLACE] After filtering: ${finalNfp.length} valid placement regions`);
 
       f = [];
 
