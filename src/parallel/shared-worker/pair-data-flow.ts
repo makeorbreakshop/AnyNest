@@ -1145,6 +1145,11 @@ export function pairData(
 
     // FIX: For convex decomposition NFPs, holes may NOT be geometrically inside the outer.
     // Always ensure: outer = CW (negative area), holes = CCW (positive area) for Clipper NonZero fill
+    if (nfp.length > 1) {
+      console.log(`[NFP WINDING] Received ${nfp.length} polygons (1 outer + ${nfp.length - 1} holes)`);
+      const areasBefore = nfp.map((p, idx) => `${idx}: ${polygonArea(p).toFixed(1)}`);
+      console.log(`[NFP WINDING] Areas before: [${areasBefore.join(', ')}]`);
+    }
     for (i = 0; i < nfp.length; ++i) {
       if (i === 0) {
         // Outer boundary: ensure CW (negative area)
@@ -1157,6 +1162,11 @@ export function pairData(
           nfp.at(i).reverse();
         }
       }
+    }
+    if (nfp.length > 1) {
+      const areasAfter = nfp.map((p, idx) => `${idx}: ${polygonArea(p).toFixed(1)}`);
+      console.log(`[NFP WINDING] Areas after:  [${areasAfter.join(', ')}]`);
+      console.log(`[NFP WINDING] Expected: outer < 0, holes > 0`);
     }
 
     // generate nfps for children (holes of parts) if any exist
