@@ -891,15 +891,20 @@ export function pairData(pair, env) {
         if (nfp.length == 0) {
             return null;
         }
-        // for outer NFPs, the first is guaranteed to be the largest. Any subsequent NFPs that lie inside the first are holes
+        // FIX: For convex decomposition NFPs, holes may NOT be geometrically inside the outer.
+        // Always ensure: outer = CW (negative area), holes = CCW (positive area) for Clipper NonZero fill
         for (i = 0; i < nfp.length; ++i) {
-            if (polygonArea(nfp.at(i)) > 0) {
-                nfp.at(i).reverse();
+            if (i === 0) {
+                // Outer boundary: ensure CW (negative area)
+                if (polygonArea(nfp.at(i)) > 0) {
+                    nfp.at(i).reverse();
+                }
             }
-            if (i > 0 &&
-                pointInPolygon(nfp.at(i).at(0), FloatPolygon.fromPoints(nfp.at(0), "")) &&
-                polygonArea(nfp.at(i)) < 0) {
-                nfp.at(i).reverse();
+            else {
+                // Holes: ensure CCW (positive area) - regardless of geometry
+                if (polygonArea(nfp.at(i)) < 0) {
+                    nfp.at(i).reverse();
+                }
             }
         }
         // generate nfps for children (holes of parts) if any exist
